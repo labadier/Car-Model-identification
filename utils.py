@@ -10,7 +10,8 @@ class params:
   
     output = 'out'
     ep = 24
-    bs = 64
+    bs = 32
+    plane_lr = 1e-3
     lower_lr = 1e-5
     upper_lr = 1e-4
 

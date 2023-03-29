@@ -14,7 +14,7 @@ class Densenet169(torch.nn.Module):
 
 		self.DenseNet = timm.create_model('densenet169', pretrained=True, num_classes=0, global_pool='')
 		self.post_dropout = torch.nn.Dropout(0.5)
-		self.classifier = torch.nn.Sequential(torch.nn.Dropout(0.5), torch.nn.Linear(792, outputs))
+		self.classifier = torch.nn.Sequential(torch.nn.Dropout(0.5), torch.nn.Linear(49, outputs))
 
 		self.loss_criterion = torch.nn.CrossEntropyLoss() 
 
@@ -27,16 +27,13 @@ class Densenet169(torch.nn.Module):
 		feat_subset1 = self.post_dropout(x_proj)
 		feat_subset2 = self.post_dropout(x_proj)
 
-		print(feat_subset1.shape)
-
 		# compute and normalize compatibility scores for each pair of non-masked features (by dropout) on each subset
 		score = torch.einsum('bijk,bijm->bkm', feat_subset1, feat_subset2)
 		score = score.view(score.size(0), -1)
 		score = torch.sign(score) * torch.sqrt(torch.abs(score) + 1e-12)
 		score = torch.nn.functional.normalize(score)
 
-		print('score', score.shape)
-		y_hat = self.classifier(y_hat)
+		y_hat = self.classifier(score)
 
 		return y_hat
 
@@ -63,14 +60,15 @@ class Densenet169(torch.nn.Module):
 				parm.requires_grad = False
 
 		opt = torch.optim.Adam(params, lower_lr)
-		scheduler = torch.optim.lr_scheduler.OneCycleLR(opt, lower_lr, epochs=epoches, 
-												steps_per_epoch=steps_per_epoch)
+		# scheduler = torch.optim.lr_scheduler.OneCycleLR(opt, lower_lr, epochs=epoches, 
+		# 										steps_per_epoch=steps_per_epoch)
 
-		return opt, scheduler
+		return opt #, scheduler
 
 	def unfreeze(self):
 		for parm in self.DenseNet.parameters():
 			parm.requires_grad = True
+		print('Unfreezing DenseNet')
 
 	def computeLoss(self, outputs, data):
 		return self.loss_criterion(outputs, data['label'].to(self.device) )
@@ -80,15 +78,22 @@ def train_model( trainloader, devloader, epoches, batch_size, output, lower_lr, 
  
 	eerror, ef1, edev_error, edev_f1, eloss, dev_loss= [], [], [], [], [], []
 	best_f1 = None
+	
 
-	model = Densenet169()
+	model = Densenet169(outputs=20)
+	stw = [i for i in model.DenseNet._modules['features']._modules['denseblock1']._modules['denselayer4']._modules['conv2'].parameters()][0].detach().cpu().numpy()
+
 	params_amount = sum([np.prod(param.shape) for param in model.parameters()])
 	print('Total number of parameters: ', params_amount)
 
-	optimizer, scheduler = model.makeOptimizer(epoches=epoches, steps_per_epoch=len(trainloader), lower_lr=lower_lr, upper_lr=upper_lr)
+	optimizer = model.makeOptimizer(epoches=epoches, steps_per_epoch=len(trainloader), lower_lr=lower_lr, upper_lr=upper_lr)
 
 	for epoch in range(epoches):
 		running_stats = {'preds': [], 'label': [], 'loss': 0.}
+		
+		if epoch == 3:
+			stw1 = [i for i in model.DenseNet._modules['features']._modules['denseblock1']._modules['denselayer4']._modules['conv2'].parameters()][0].detach().cpu().numpy()
+			print(f"Space Shift : {np.linalg.norm(stw - stw1):.3f}")
 
 		model.train()
 		if epoch == int(epoches*0.75):
@@ -111,7 +116,7 @@ def train_model( trainloader, devloader, epoches, batch_size, output, lower_lr, 
 			optimizer.step()
 			optimizer.zero_grad()
 
-			scheduler.step() 
+			# scheduler.step() 
 			# print statistics
 			with torch.no_grad():
         
