@@ -55,11 +55,11 @@ class Densenet169(torch.nn.Module):
 			for step, (_, block) in enumerate(self.DenseNet._modules['features']._modules.items()):
 				params += [{'params': block.parameters(), 'lr': lrs[step]}]
 
-			params += [{'params': self.classifier.parameters(), 'lr': upper_lr}]
 			for parm in self.DenseNet.parameters():
 				parm.requires_grad = False
 
-		opt = torch.optim.Adam(params, lower_lr)
+		params += [{'params': self.classifier.parameters(), 'lr': upper_lr*10}]
+		opt = torch.optim.Adam(params, upper_lr)
 		# scheduler = torch.optim.lr_scheduler.OneCycleLR(opt, lower_lr, epochs=epoches, 
 		# 										steps_per_epoch=steps_per_epoch)
 
@@ -96,7 +96,7 @@ def train_model( trainloader, devloader, epoches, batch_size, output, lower_lr, 
 			print(f"Space Shift : {np.linalg.norm(stw - stw1):.3f}")
 
 		model.train()
-		if epoch == int(epoches*0.75):
+		if epoch == int(epoches*0.35):
 			model.unfreeze()
 
 		iter = tqdm(enumerate(trainloader, 0))
