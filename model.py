@@ -58,7 +58,7 @@ class Densenet169(torch.nn.Module):
 			for parm in self.DenseNet.parameters():
 				parm.requires_grad = False
 
-		params += [{'params': self.classifier.parameters(), 'lr': upper_lr*10}]
+		params += [{'params': self.classifier.parameters(), 'lr': upper_lr*150}]
 		opt = torch.optim.Adam(params, upper_lr)
 		# scheduler = torch.optim.lr_scheduler.OneCycleLR(opt, lower_lr, epochs=epoches, 
 		# 										steps_per_epoch=steps_per_epoch)
@@ -68,6 +68,7 @@ class Densenet169(torch.nn.Module):
 	def unfreeze(self):
 		for parm in self.DenseNet.parameters():
 			parm.requires_grad = True
+
 		print('Unfreezing DenseNet')
 
 	def computeLoss(self, outputs, data):
@@ -78,7 +79,7 @@ def train_model( trainloader, devloader, epoches, batch_size, output, lower_lr, 
  
 	eerror, ef1, edev_error, edev_f1, eloss, dev_loss= [], [], [], [], [], []
 	best_f1 = None
-	
+	print(f'Change on epoch {int(epoches*0.35)}')
 
 	model = Densenet169(outputs=20)
 	stw = [i for i in model.DenseNet._modules['features']._modules['denseblock1']._modules['denselayer4']._modules['conv2'].parameters()][0].detach().cpu().numpy()
