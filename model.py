@@ -55,8 +55,8 @@ class Densenet169(torch.nn.Module):
 			for step, (_, block) in enumerate(self.DenseNet._modules['features']._modules.items()):
 				params += [{'params': block.parameters(), 'lr': lrs[step]}]
 
-			for parm in self.DenseNet.parameters():
-				parm.requires_grad = False
+			# for parm in self.DenseNet.parameters():
+			# 	parm.requires_grad = False
 
 		params += [{'params': self.classifier.parameters(), 'lr': upper_lr*150}]
 		opt = torch.optim.Adam(params, upper_lr)
@@ -68,8 +68,12 @@ class Densenet169(torch.nn.Module):
 	def unfreeze(self):
 		for parm in self.DenseNet.parameters():
 			parm.requires_grad = True
-
 		print('Unfreezing DenseNet')
+	
+	def freeze(self):
+		for parm in self.DenseNet.parameters():
+			parm.requires_grad = False
+		print('Freezing DenseNet')
 
 	def computeLoss(self, outputs, data):
 		return self.loss_criterion(outputs, data['label'].to(self.device) )
@@ -98,7 +102,7 @@ def train_model( trainloader, devloader, epoches, batch_size, output, lower_lr, 
 
 		model.train()
 		if epoch == int(epoches*0.35):
-			model.unfreeze()
+			model.freeze()
 
 		iter = tqdm(enumerate(trainloader, 0))
 		iter.set_description(f'Epoch: {epoch:3d}')
