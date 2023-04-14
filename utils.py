@@ -2,6 +2,7 @@ from torchvision import transforms, datasets
 from torch.utils.data import DataLoader, Dataset
 import numpy as np, torch
 from matplotlib import pyplot as plt
+
 from PIL import Image
 import os
 
@@ -9,7 +10,7 @@ import os
 class params:
   
     output = 'out'
-    ep = 24
+    ep = 50
     bs = 32
     plane_lr = 1e-3
     lower_lr = 1e-5
@@ -34,7 +35,7 @@ class MyData(Dataset):
         ret = {'label': self.data['label'][idx], 'imgs': self.transform(Image.fromarray(self.data['imgs'][idx])) if self.transform is not None else self.data['img'][idx]}
         return ret
     
-def makeDataLoader(data_train, data_test, batch_size, crop_size=100):
+def makeDataLoader(data_train, data_test, batch_size, crop_size):
 
   transform = transforms.Compose([
       
@@ -74,3 +75,11 @@ def plot_training(history, output, measure='error'):
   plt.plot(x,history['dev_' + measure][x], marker="o", color="red")
   plt.savefig(os.path.join(output, f'train_history.png'))
   plt.show()
+
+def plot_lr(lr_history, output):
+  
+    plt.plot(lr_history)
+    plt.legend(['lr'], loc='upper left')
+    plt.ylabel('lr')
+    plt.xlabel('Epoch')
+    plt.savefig(os.path.join(output, f'lr_history.png'))
