@@ -116,7 +116,7 @@ def train_model( trainloader, devloader, epoches, batch_size, output, lower_lr, 
 
         model.train()
         if epoch == freeze_at:
-            optimizer, scheduler = model.freeze(optm = optimizer, lr=lower_lr, remaining_epoches=epoches-epoch+1, steps_per_epoch = len(trainloader))
+            optimizer, scheduler = model.freeze(optm = optimizer, lr=upper_lr, remaining_epoches=epoches-epoch+1, steps_per_epoch = len(trainloader))
             scheduler_steping = True
             stw = [i for i in model.DenseNet._modules['features']._modules['denseblock1']._modules['denselayer4']._modules['conv2'].parameters()][0].detach().cpu().numpy()
 
