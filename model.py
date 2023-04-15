@@ -91,11 +91,11 @@ def get_lr(optimizer):
             if optimizer.param_groups[group]['name'] == 'classifier':
                 return optimizer.param_groups[group]['lr']
 
-def train_model( trainloader, devloader, epoches, batch_size, output, lower_lr, upper_lr=None):
+def train_model( trainloader, devloader, epoches, batch_size, output, lower_lr, upper_lr=None, freeze_at=25):
 
     eerror, ef1, edev_error, edev_f1, eloss, dev_loss= [], [], [], [], [], []
     best_f1 = None
-    print(f'Change on epoch {25}')
+    print(f'Change on epoch {freeze_at}')
 
     SS = []
 
@@ -110,12 +110,12 @@ def train_model( trainloader, devloader, epoches, batch_size, output, lower_lr, 
     for epoch in range(epoches):
         running_stats = {'preds': [], 'label': [], 'loss': 0.}
 
-        if epoch == 26:
+        if epoch == freeze_at + 1:
             stw1 = [i for i in model.DenseNet._modules['features']._modules['denseblock1']._modules['denselayer4']._modules['conv2'].parameters()][0].detach().cpu().numpy()
             print(f"Space Shift : {np.linalg.norm(stw - stw1):.3f}")
 
         model.train()
-        if epoch == 25:
+        if epoch == freeze_at:
             optimizer, scheduler = model.freeze(optm = optimizer, lr=lower_lr, remaining_epoches=epoches-epoch+1, steps_per_epoch = len(trainloader))
             scheduler_steping = True
             stw = [i for i in model.DenseNet._modules['features']._modules['denseblock1']._modules['denselayer4']._modules['conv2'].parameters()][0].detach().cpu().numpy()
